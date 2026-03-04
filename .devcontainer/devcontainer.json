@@ -1,0 +1,29 @@
+{
+    "name": "Go TDD Env",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go" // コンテナ内でGo拡張機能を自動有効化
+            ],
+            "settings": {
+                "go.lintTool": "golangci-lint",
+                "go.lintOnSave": "package",
+                "[go]": {
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": "always"
+                    }
+                }
+            }
+        }
+    },
+    "remoteUser": "root",
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined"
+    ]
+}
