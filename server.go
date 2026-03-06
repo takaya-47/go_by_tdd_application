@@ -23,5 +23,3 @@ func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprint(w, score)
 }
-
-// TODO: https://andmorefine.gitbook.io/learn-go-with-tests/build-an-application/http-server#sukoawosuru
