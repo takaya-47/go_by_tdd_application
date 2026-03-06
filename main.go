@@ -1,9 +1,17 @@
 package main
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 func main() {
-	// PlayerServer関数をhttp.HandlerFunc型にキャスト
-	handler := http.HandlerFunc(PlayerServer)
-	http.ListenAndServe(":5000", handler)
+	server := &PlayerServer{&InMemoryPlayerStore{}}
+	log.Fatal(http.ListenAndServe(":5000", server))
+}
+
+type InMemoryPlayerStore struct {}
+
+func (i *InMemoryPlayerStore) GetPlayerScore(name string) int {
+	return 123
 }
