@@ -13,7 +13,10 @@ type StubPlayerStore struct {
 }
 
 func (s *StubPlayerStore) GetPlayerScore(name string) int {
-	return s.scores[name]
+	if score, ok := s.scores[name]; ok {
+		return score
+	}
+	return 0
 }
 
 func (s *StubPlayerStore) RecordWin(name string) {
