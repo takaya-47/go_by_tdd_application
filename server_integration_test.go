@@ -7,8 +7,7 @@ import (
 )
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
-	store := NewInMemoryPlayerStore()
-	server := &PlayerServer{store: store}
+	server := NewPlayerServer(NewInMemoryPlayerStore())
 	player := "Pepper"
 
 	for i := 0; i < 3; i++ {
