@@ -14,7 +14,7 @@ type PlayerStore interface {
 type PlayerServer struct {
 	store  PlayerStore
 	// フィールド名を書かない=埋め込み
-	// PlayerServerはhttp.Handlerを埋め込むことで、ServeHTTPメソッドを実装していることになる
+	// PlayerServerはhttp.Handlerを埋め込むことで、ServeHTTPメソッドを実装していることになる。つまり、p.ServeHTTP(w, r)と呼び出すことができるようになる。
 	http.Handler
 }
 
