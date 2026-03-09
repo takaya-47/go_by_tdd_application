@@ -13,19 +13,21 @@ type PlayerStore interface {
 
 type PlayerServer struct {
 	store  PlayerStore
-	router *http.ServeMux
+	// フィールド名を書かない=埋め込み
+	// PlayerServerはhttp.Handlerを埋め込むことで、ServeHTTPメソッドを実装していることになる
+	http.Handler
 }
 
 func NewPlayerServer(store PlayerStore) *PlayerServer {
-	p := &PlayerServer{
-		store:  store,
-		router: http.NewServeMux(),
-	}
+	p := new(PlayerServer)
+	p.store = store
 
+	router := http.NewServeMux()
 	// p.leagueHandlerの関数そのものを渡しつつ、HandlerFunc型にキャスト。
 	// p.leagueHandler自体はこの時点で実行されず、p.router.ServeHTTP(w, r)実行時に引数を渡しつつ実行される
-	p.router.Handle("/league", http.HandlerFunc(p.leagueHandler))
-	p.router.Handle("/players/", http.HandlerFunc(p.playersHandler))
+	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
+	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
+	p.Handler = router // 埋め込みの型名（Handler）がフィールド名となる
 
 	return p
 }
@@ -56,8 +58,4 @@ func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 	w.WriteHeader(http.StatusAccepted)
 	p.store.RecordWin(player)
-}
-
-func (p *PlayerServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.router.ServeHTTP(w, r)
 }
