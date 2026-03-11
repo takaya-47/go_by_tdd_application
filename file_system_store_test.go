@@ -1,15 +1,17 @@
 package main
 
 import (
-	"strings"
+	"io"
+	"os"
 	"testing"
 )
 
 func TestFileSystemStore(t *testing.T) {
 	t.Run("league from a reader", func(t *testing.T) {
-		database := strings.NewReader(`[
+		database, cleanDatabase := createTempFile(t, `[
             {"Name": "Cleo", "Wins": 10},
             {"Name": "Chris", "Wins": 33}]`)
+		defer cleanDatabase()
 
 		store := FileSystemPlayerStore{database}
 
@@ -27,9 +29,10 @@ func TestFileSystemStore(t *testing.T) {
 	})
 
 	t.Run("get player score", func(t *testing.T) {
-		database := strings.NewReader(`[
+		database, cleanDatabase := createTempFile(t, `[
             {"Name": "Cleo", "Wins": 10},
             {"Name": "Chris", "Wins": 33}]`)
+		defer cleanDatabase()
 
 		store := FileSystemPlayerStore{database}
 
@@ -46,4 +49,24 @@ func assertScoreEquals(t testing.TB, got, want int) {
 	if got != want {
 		t.Errorf("got %d want %d", got, want)
 	}
+}
+
+func createTempFile(t testing.TB, initialData string) (io.ReadWriteSeeker, func()) {
+	t.Helper()
+
+	tmpfile, err := os.CreateTemp("", "db")
+	if err != nil {
+		t.Fatalf("could not create temp file %v", err)
+	}
+
+	// Writeの引数はbyte[]なので、stringをbyte[]にキャストする
+	tmpfile.Write([]byte(initialData))
+
+	// 一時ファイルの削除処理
+	removeFile := func() {
+		tmpfile.Close()
+		os.Remove(tmpfile.Name())
+	}
+
+	return tmpfile, removeFile
 }
