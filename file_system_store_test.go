@@ -20,5 +20,9 @@ func TestFileSystemStore(t *testing.T) {
 		}
 
 		assertLeague(t, got, want)
+
+		// 2回目以降も同じ結果が得られることを確認
+		got = store.GetLeague()
+		assertLeague(t, got, want)
 	})
 }
