@@ -25,6 +25,8 @@ func (f *FileSystemPlayerStore) RecordWin(name string) {
 
 	if player != nil {
 		player.Wins++
+	} else {
+		league = append(league, Player{Name: name, Wins: 1})
 	}
 
 	// GetLeagueで最後まで読み込んでしまったので、カーソルの位置を先頭に戻した上でleagueを書き込む（なので、書き込み先の中身が全て書き換わる）
