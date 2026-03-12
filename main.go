@@ -15,8 +15,7 @@ func main() {
 		log.Fatalf("problem opening %q %v", dbFileName, err)
 	}
 
-	store := FileSystemPlayerStore{db}
-	server := NewPlayerServer(&store)
+	server := NewPlayerServer(NewFileSystemPlayerStore(db))
 	// Webサーバーを起動
 	log.Fatal(http.ListenAndServe(":5000", server))
 }
