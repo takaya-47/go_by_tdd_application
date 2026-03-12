@@ -3,7 +3,7 @@ package main
 import "sync"
 
 // PlayerStoreを実装するインメモリのストア
-type InMemoryPlayerStore struct{
+type InMemoryPlayerStore struct {
 	store map[string]int
 	lock  sync.Mutex
 }
