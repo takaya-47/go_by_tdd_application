@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 )
 
 type FileSystemPlayerStore struct {
@@ -72,5 +73,9 @@ func (f *FileSystemPlayerStore) RecordWin(name string) {
 }
 
 func (f *FileSystemPlayerStore) GetLeague() League {
+	sort.Slice(f.league, func(i, j int) bool {
+		// trueなら前に来る
+		return f.league[i].Wins > f.league[j].Wins
+	})
 	return f.league
 }
