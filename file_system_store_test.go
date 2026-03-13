@@ -15,22 +15,22 @@ func TestFileSystemStore(t *testing.T) {
 		assertNoError(t, err)
 	})
 
-	t.Run("league from a reader", func(t *testing.T) {
+	t.Run("league sorted", func(t *testing.T) {
 		database, cleanDatabase := createTempFile(t, `[
             {"Name": "Cleo", "Wins": 10},
             {"Name": "Chris", "Wins": 33}]`)
 		defer cleanDatabase()
 
 		store, err := NewFileSystemPlayerStore(database)
+		assertNoError(t, err)
 
 		got := store.GetLeague()
 		want := []Player{
+			{"Chris", 33}, // スコアが高い順
 			{"Cleo", 10},
-			{"Chris", 33},
 		}
 
 		assertLeague(t, got, want)
-		assertNoError(t, err)
 
 		// 2回目以降も同じ結果が得られることを確認
 		got = store.GetLeague()
