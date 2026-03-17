@@ -10,7 +10,7 @@ import (
 
 type FileSystemPlayerStore struct {
 	database *json.Encoder
-	league League
+	league   League
 }
 
 func NewFileSystemPlayerStore(file *os.File) (*FileSystemPlayerStore, error) {
@@ -30,8 +30,28 @@ func NewFileSystemPlayerStore(file *os.File) (*FileSystemPlayerStore, error) {
 
 	return &FileSystemPlayerStore{
 		database: json.NewEncoder(&tape{file: file}),
-		league: league,
+		league:   league,
 	}, nil
+}
+
+func FileSystemPlayerStoreFromFile(path string) (*FileSystemPlayerStore, func(), error) {
+	db, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("problem opening %q %v", path, err)
+	}
+
+	closeFunc := func() {
+		db.Close()
+	}
+
+	store, err := NewFileSystemPlayerStore(db)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("problem creating file system player store, %v", err)
+	}
+
+	return store, closeFunc, nil
 }
 
 func initializePlayerDbFile(file *os.File) error {
@@ -42,7 +62,7 @@ func initializePlayerDbFile(file *os.File) error {
 	}
 
 	if info.Size() == 0 {
-		 // 中身がからであれば空配列のJSONとして初期化
+		// 中身がからであれば空配列のJSONとして初期化
 		file.Write([]byte("[]"))
 		file.Seek(0, io.SeekStart)
 	}
