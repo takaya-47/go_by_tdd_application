@@ -1,6 +1,7 @@
 package main
 
 import (
+	poker "github.com/takaya-47/go_by_tdd_application"
 	"log"
 	"net/http"
 	"os"
@@ -15,11 +16,11 @@ func main() {
 		log.Fatalf("problem opening %q %v", dbFileName, err)
 	}
 
-	store, err := NewFileSystemPlayerStore(db)
+	store, err := poker.NewFileSystemPlayerStore(db)
 	if err != nil {
 		log.Fatalf("problem creating file system player store, %v", err)
 	}
-	server := NewPlayerServer(store)
+	server := poker.NewPlayerServer(store)
 	// Webサーバーを起動
 	log.Fatal(http.ListenAndServe(":5000", server))
 }
