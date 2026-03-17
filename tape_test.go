@@ -6,7 +6,7 @@ import (
 )
 
 func TestTapeWrite(t *testing.T) {
-	file, clean := createTempFile(t, "12345")
+	file, clean := CreateTempFile(t, "12345")
 	defer clean()
 
 	tape := &tape{file}
@@ -20,5 +20,4 @@ func TestTapeWrite(t *testing.T) {
 	if got != want {
 		t.Errorf("got %v want %v", got, want)
 	}
-
 }
