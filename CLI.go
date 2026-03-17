@@ -1,12 +1,22 @@
 package poker
 
-import "io"
+import (
+	"bufio"
+	"io"
+	"strings"
+)
 
 type CLI struct {
 	store PlayerStore
 	in    io.Reader
 }
 
-func (c *CLI) PlayPoker() {
-	c.store.RecordWin("Chris") // 固定のプレイヤー名。あとで標準入力から受け取った名前にする。
+func (cli *CLI) PlayPoker() {
+	reader := bufio.NewScanner(cli.in)
+	reader.Scan()
+	cli.store.RecordWin(extractWinner(reader.Text()))
+}
+
+func extractWinner(input string) string {
+	return strings.Replace(input, " wins", "", 1)
 }
