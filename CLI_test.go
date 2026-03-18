@@ -9,7 +9,7 @@ import (
 	poker "github.com/takaya-47/go_by_tdd_application"
 )
 
-var dummySpyAlerter = *&SpyBlindAlerter{}
+var dummySpyAlerter = SpyBlindAlerter{}
 
 func TestCLI(t *testing.T) {
 	t.Run("record chris win from user input", func(t *testing.T) {
