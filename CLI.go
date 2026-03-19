@@ -2,37 +2,49 @@ package poker
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 )
 
+const PlayerPrompt = "Please enter the number of players: "
+
 type CLI struct {
 	store   PlayerStore
 	in      *bufio.Scanner
+	out     io.Writer
 	alerter BlindAlerter
 }
 
-func NewCLI(store PlayerStore, in io.Reader, alerter BlindAlerter) *CLI {
+func NewCLI(store PlayerStore, in io.Reader, out io.Writer, alerter BlindAlerter) *CLI {
 	return &CLI{
 		store:   store,
 		in:      bufio.NewScanner(in),
+		out:     out,
 		alerter: alerter,
 	}
 }
 
 func (cli *CLI) PlayPoker() {
-	cli.scheduleBlindAlerts()
+	fmt.Fprint(cli.out, PlayerPrompt)
+
+	// 文字列としての入力を数値に変換する
+	numberOfPlayers, _ := strconv.Atoi(cli.readLine())
+	cli.scheduleBlindAlerts(numberOfPlayers)
+
 	userInput := cli.readLine()
 	cli.store.RecordWin(extractWinner(userInput))
 }
 
-func (cli *CLI) scheduleBlindAlerts() {
+func (cli *CLI) scheduleBlindAlerts(numberOfPlayers int) {
+	blindIncrement := time.Duration(5+numberOfPlayers) * time.Minute
 	blinds := []int{100, 200, 300, 400, 500, 600, 800, 1000, 2000, 4000, 8000}
 	blindTime := 0 * time.Second
 	for _, blind := range blinds {
 		cli.alerter.ScheduleAlertAt(blindTime, blind)
-		blindTime += 10 * time.Minute
+		blindTime += blindIncrement
 	}
 }
 
