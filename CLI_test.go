@@ -44,10 +44,6 @@ func TestCLI(t *testing.T) {
 
 		cli.PlayPoker()
 
-		if game.StartCalled {
-			t.Error("game should not have started")
-		}
-
 		assertGameNotStarted(t, game)
 		assertMessagesSentToUser(t, stdOut, poker.PlayerPrompt, poker.BadPlayerInputErrMsg)
 	})
