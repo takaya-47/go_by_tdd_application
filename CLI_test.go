@@ -48,7 +48,20 @@ func TestCLI(t *testing.T) {
 			t.Error("game should not have started")
 		}
 
+		assertGameNotStarted(t, game)
 		assertMessagesSentToUser(t, stdOut, poker.PlayerPrompt, poker.BadPlayerInputErrMsg)
+	})
+
+	t.Run("it prints an error when the winner is declared incorrectly", func(t *testing.T) {
+		in := userSends(t, "8", "Lloyd is a killer")
+		stdOut := &bytes.Buffer{}
+		game := &GameSpy{}
+		cli := poker.NewCLI(in, stdOut, game)
+
+		cli.PlayPoker()
+
+		assertGameNotFinished(t, game)
+		assertMessagesSentToUser(t, stdOut, poker.PlayerPrompt, poker.BadWinnerInputErrMsg)
 	})
 }
 
@@ -67,11 +80,27 @@ func assertGameStartedWith(t *testing.T, game *GameSpy, want int) {
 	}
 }
 
+func assertGameNotStarted(t *testing.T, game *GameSpy) {
+	t.Helper()
+
+	if game.StartCalled {
+		t.Errorf("game should not have started")
+	}
+}
+
 func assertGameFinishedWith(t *testing.T, game *GameSpy, want string) {
 	t.Helper()
 
 	if game.FinishedWith != want {
 		t.Errorf("wanted Finish called with %q but got %q", want, game.FinishedWith)
+	}
+}
+
+func assertGameNotFinished(t *testing.T, game *GameSpy) {
+	t.Helper()
+
+	if game.FinishCalled {
+		t.Error("game should not have finished")
 	}
 }
 
@@ -104,9 +133,10 @@ func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
 }
 
 type GameSpy struct {
-	StartedWith  int
-	FinishedWith string
-	StartCalled  bool
+	StartCalled    bool
+	StartedWith    int
+	FinishCalled   bool
+	FinishedWith   string
 }
 
 func (g *GameSpy) Start(numberOfPlayers int) {
@@ -116,4 +146,5 @@ func (g *GameSpy) Start(numberOfPlayers int) {
 
 func (g *GameSpy) Finish(winner string) {
 	g.FinishedWith = winner
+	g.FinishCalled = true
 }
