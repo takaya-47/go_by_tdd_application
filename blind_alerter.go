@@ -21,5 +21,3 @@ func StdOutAlerter(duration time.Duration, amount int) {
 		fmt.Fprintf(os.Stdout, "Blind is now %d\n", amount)
 	})
 }
-
-// 今の章が終わったらPR作成すること
