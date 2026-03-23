@@ -2,38 +2,54 @@ package poker
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
+	"strconv"
 	"strings"
-	"time"
 )
 
 type CLI struct {
-	store   PlayerStore
-	in      *bufio.Scanner
-	alerter BlindAlerter
+	in   *bufio.Scanner
+	out  io.Writer
+	game Game
 }
 
-func NewCLI(store PlayerStore, in io.Reader, alerter BlindAlerter) *CLI {
+func NewCLI(in io.Reader, out io.Writer, game Game) *CLI {
 	return &CLI{
-		store:   store,
-		in:      bufio.NewScanner(in),
-		alerter: alerter,
+		in:   bufio.NewScanner(in),
+		out:  out,
+		game: game,
 	}
 }
+
+const PlayerPrompt = "Please enter the number of players: "
+const BadPlayerInputErrMsg = "you're so silly"
+const BadWinnerInputErrMsg = "invalid winner input, expect format of 'PlayerName wins'"
 
 func (cli *CLI) PlayPoker() {
-	cli.scheduleBlindAlerts()
-	userInput := cli.readLine()
-	cli.store.RecordWin(extractWinner(userInput))
-}
+	fmt.Fprint(cli.out, PlayerPrompt)
 
-func (cli *CLI) scheduleBlindAlerts() {
-	blinds := []int{100, 200, 300, 400, 500, 600, 800, 1000, 2000, 4000, 8000}
-	blindTime := 0 * time.Second
-	for _, blind := range blinds {
-		cli.alerter.ScheduleAlertAt(blindTime, blind)
-		blindTime += 10 * time.Minute
+	// 文字列としての標準入力から渡されるプレイヤー人数を数値に変換する
+	numberOfPlayers, err := strconv.Atoi(cli.readLine())
+
+	if err != nil {
+		fmt.Fprint(cli.out, BadPlayerInputErrMsg)
+		return
 	}
+
+	cli.game.Start(numberOfPlayers)
+
+	// ２行目の標準入力を受け取る
+	userInput := cli.readLine()
+	winner, err := extractWinner(userInput)
+
+	if err != nil {
+		fmt.Fprint(cli.out, err.Error())
+		return
+	}
+
+	cli.game.Finish(winner)
 }
 
 func (cli *CLI) readLine() string {
@@ -41,6 +57,15 @@ func (cli *CLI) readLine() string {
 	return cli.in.Text()
 }
 
-func extractWinner(userInput string) string {
-	return strings.Replace(userInput, " wins", "", 1)
+func extractWinner(userInput string) (string, error) {
+	if ! strings.Contains(userInput, " wins") {
+		return "", errors.New(BadWinnerInputErrMsg)
+	}
+
+	return strings.Replace(userInput, " wins", "", 1), nil
+}
+
+type Game interface {
+	Start(numberOfPlayers int)
+	Finish(winner string)
 }
