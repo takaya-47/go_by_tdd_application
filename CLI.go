@@ -9,6 +9,7 @@ import (
 )
 
 const PlayerPrompt = "Please enter the number of players: "
+const BadPlayerInputErrMsg = "you're so silly"
 
 type CLI struct {
 	in   *bufio.Scanner
@@ -28,7 +29,13 @@ func (cli *CLI) PlayPoker() {
 	fmt.Fprint(cli.out, PlayerPrompt)
 
 	// 文字列としての標準入力から渡されるプレイヤー人数を数値に変換する
-	numberOfPlayers, _ := strconv.Atoi(cli.readLine())
+	numberOfPlayers, err := strconv.Atoi(cli.readLine())
+
+	if err != nil {
+		fmt.Fprint(cli.out, BadPlayerInputErrMsg)
+		return
+	}
+
 	cli.game.Start(numberOfPlayers)
 
 	// ２行目の標準入力を受け取る
