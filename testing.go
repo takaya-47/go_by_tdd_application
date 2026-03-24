@@ -72,6 +72,12 @@ func NewLeagueRequest() *http.Request {
 	return req
 }
 
+func NewGameRequest() *http.Request {
+	req, _ := http.NewRequest(http.MethodGet, "/game", nil)
+
+	return req
+}
+
 func AssertResponseBody(t testing.TB, got, want string) {
 	t.Helper()
 
@@ -80,11 +86,11 @@ func AssertResponseBody(t testing.TB, got, want string) {
 	}
 }
 
-func AssertStatus(t testing.TB, got, want int) {
+func AssertStatus(t testing.TB, response *httptest.ResponseRecorder, want int) {
 	t.Helper()
 
-	if got != want {
-		t.Errorf("did not get correct status, got %d, want %d", got, want)
+	if response.Code != want {
+		t.Errorf("did not get correct status, got %d, want %d", response.Code, want)
 	}
 }
 
