@@ -1,10 +1,13 @@
 package poker_test
 
 import (
-	poker "github.com/takaya-47/go_by_tdd_application"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	websocket "github.com/gorilla/websocket"
+	poker "github.com/takaya-47/go_by_tdd_application"
 )
 
 func TestGetPlayers(t *testing.T) {
@@ -94,5 +97,25 @@ func TestGame(t *testing.T) {
 		server.ServeHTTP(response, request)
 
 		poker.AssertStatus(t, response, http.StatusOK)
+	})
+
+	t.Run("when we get a message over a websocket it is a winner of a game", func(t *testing.T) {
+		store := poker.NewStubPlayerStore(nil, nil)
+		winner := "Ruth"
+		server := httptest.NewServer(poker.NewPlayerServer(store))
+		defer server.Close()
+
+		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
+		ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+		if err != nil {
+			t.Fatalf("could not open a ws connection on %s %v", wsURL, err)
+		}
+		defer ws.Close()
+
+		if err := ws.WriteMessage(websocket.TextMessage, []byte(winner)); err != nil {
+			t.Fatalf("could not send message over ws connection %v", err)
+		}
+
+		poker.AssertPlayerWin(t, store, winner)
 	})
 }
