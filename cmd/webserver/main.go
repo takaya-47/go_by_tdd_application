@@ -20,7 +20,7 @@ func main() {
 	server := poker.NewPlayerServer(store)
 
 	// Webサーバーを起動
-	if err := http.ListenAndServe(":5000", server); err != nil {
-		log.Fatalf("could not listen on port 5000 %v", err)
+	if err := http.ListenAndServe(":5001", server); err != nil {
+		log.Fatalf("could not listen on port 5001 %v", err)
 	}
 }
