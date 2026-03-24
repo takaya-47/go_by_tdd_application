@@ -31,6 +31,7 @@ func NewPlayerServer(store PlayerStore) *PlayerServer {
 	// p.leagueHandler自体はこの時点で実行されず、p.router.ServeHTTP(w, r)実行時に引数を渡しつつ実行される
 	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
 	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
+	router.Handle("/game", http.HandlerFunc(p.gameHandler))
 	p.Handler = router // 埋め込みの型名（Handler）がフィールド名となる
 
 	return p
@@ -51,6 +52,10 @@ func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		p.processWin(w, player)
 	}
+}
+
+func (p *PlayerServer) gameHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
