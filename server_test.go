@@ -82,3 +82,17 @@ func TestLeague(t *testing.T) {
 		poker.AssertContentType(t, response, "application/json")
 	})
 }
+
+func TestGame(t *testing.T) {
+	t.Run("Get /game returns 200", func(t *testing.T) {
+		store := poker.NewStubPlayerStore(nil, nil)
+		server := poker.NewPlayerServer(store)
+
+		request, _ := http.NewRequest(http.MethodGet, "/game", nil)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		poker.AssertStatus(t, response.Code, http.StatusOK)
+	})
+}
