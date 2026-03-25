@@ -1,6 +1,8 @@
 name: Test
-on:
-  pull_request:
+on: pull_request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }} # ワークフロー名とブランチ名でグループ化
+  cancel-in-progress: true # 同じグループのワークフローが実行中の場合、古いものをキャンセル
 defaults:
   run:
     shell: bash
@@ -14,7 +16,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24"
-          cache: true
-          cache-dependency-path: |
+          cache: true # Goモジュールのキャッシュを有効にする
+          cache-dependency-path: |  # go.sumをキャッシュのキーにする
             go.sum
       - run: go test -v ./...
