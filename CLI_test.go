@@ -3,10 +3,12 @@ package poker_test
 import (
 	"bytes"
 	"fmt"
-	poker "github.com/takaya-47/go_by_tdd_application"
+	"io"
 	"strings"
 	"testing"
 	"time"
+
+	poker "github.com/takaya-47/go_by_tdd_application"
 )
 
 func TestCLI(t *testing.T) {
@@ -124,7 +126,7 @@ type SpyBlindAlerter struct {
 	alerts []scheduledAlert
 }
 
-func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
+func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int, to io.Writer) {
 	s.alerts = append(s.alerts, scheduledAlert{at, amount})
 }
 
@@ -135,7 +137,7 @@ type GameSpy struct {
 	FinishedWith   string
 }
 
-func (g *GameSpy) Start(numberOfPlayers int) {
+func (g *GameSpy) Start(numberOfPlayers int, alertDestination io.Writer) {
 	g.StartedWith = numberOfPlayers
 	g.StartCalled = true
 }
