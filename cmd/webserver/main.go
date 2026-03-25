@@ -17,7 +17,11 @@ func main() {
 
 	defer closeFunc()
 
-	server := poker.NewPlayerServer(store)
+	server, err := poker.NewPlayerServer(store)
+
+	if err != nil {
+		log.Fatalf("could not create player server %v", err)
+	}
 
 	// Webサーバーを起動
 	if err := http.ListenAndServe(":5001", server); err != nil {

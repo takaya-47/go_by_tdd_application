@@ -6,9 +6,12 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 const jsonContentType = "application/json"
+const htmlTemplatePath = "game.html"
 
 type PlayerStore interface {
 	GetPlayerScore(name string) int
@@ -17,15 +20,24 @@ type PlayerStore interface {
 }
 
 type PlayerServer struct {
-	store  PlayerStore
+	store PlayerStore
 	// フィールド名を書かない=埋め込み
 	// PlayerServerはhttp.Handlerを埋め込むことで、ServeHTTPメソッドを実装していることになる。つまり、p.ServeHTTP(w, r)と呼び出すことができるようになる。
 	http.Handler
+	template *template.Template
 }
 
-func NewPlayerServer(store PlayerStore) *PlayerServer {
+func NewPlayerServer(store PlayerStore) (*PlayerServer, error) {
 	p := new(PlayerServer)
+
+	tmpl, err := template.ParseFiles(htmlTemplatePath)
+
+	if err != nil {
+		return nil, fmt.Errorf("problem opening %q %v", htmlTemplatePath, err)
+	}
+
 	p.store = store
+	p.template = tmpl
 
 	router := http.NewServeMux()
 	// p.leagueHandlerの関数そのものを渡しつつ、HandlerFunc型にキャスト。
@@ -33,9 +45,10 @@ func NewPlayerServer(store PlayerStore) *PlayerServer {
 	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
 	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
 	router.Handle("/game", http.HandlerFunc(p.game))
+	router.Handle("/ws", http.HandlerFunc(p.webSocket))
 	p.Handler = router // 埋め込みの型名（Handler）がフィールド名となる
 
-	return p
+	return p, nil
 }
 
 func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +77,17 @@ func (p *PlayerServer) game(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Execute(w, nil)
+}
+
+var wsUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func (p *PlayerServer) webSocket(w http.ResponseWriter, r *http.Request) {
+	conn, _ := wsUpgrader.Upgrade(w, r, nil)
+	_, winnerMsg, _ := conn.ReadMessage()
+	p.store.RecordWin(string(winnerMsg))
 }
 
 func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
