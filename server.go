@@ -3,11 +3,17 @@ package poker
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 const jsonContentType = "application/json"
+const htmlTemplatePath = "game.html"
 
 type PlayerStore interface {
 	GetPlayerScore(name string) int
@@ -16,24 +22,37 @@ type PlayerStore interface {
 }
 
 type PlayerServer struct {
-	store  PlayerStore
+	store PlayerStore
 	// フィールド名を書かない=埋め込み
 	// PlayerServerはhttp.Handlerを埋め込むことで、ServeHTTPメソッドを実装していることになる。つまり、p.ServeHTTP(w, r)と呼び出すことができるようになる。
 	http.Handler
+	template *template.Template
+	game     Game
 }
 
-func NewPlayerServer(store PlayerStore) *PlayerServer {
+func NewPlayerServer(store PlayerStore, game Game) (*PlayerServer, error) {
 	p := new(PlayerServer)
+
+	tmpl, err := template.ParseFiles(htmlTemplatePath)
+
+	if err != nil {
+		return nil, fmt.Errorf("problem opening %q %v", htmlTemplatePath, err)
+	}
+
 	p.store = store
+	p.template = tmpl
+	p.game = game
 
 	router := http.NewServeMux()
 	// p.leagueHandlerの関数そのものを渡しつつ、HandlerFunc型にキャスト。
 	// p.leagueHandler自体はこの時点で実行されず、p.router.ServeHTTP(w, r)実行時に引数を渡しつつ実行される
 	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
 	router.Handle("/players/", http.HandlerFunc(p.playersHandler))
+	router.Handle("/game", http.HandlerFunc(p.playGame))
+	router.Handle("/ws", http.HandlerFunc(p.webSocket))
 	p.Handler = router // 埋め込みの型名（Handler）がフィールド名となる
 
-	return p
+	return p, nil
 }
 
 func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +83,70 @@ func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 	w.WriteHeader(http.StatusAccepted)
 	p.store.RecordWin(player)
+}
+
+func (p *PlayerServer) playGame(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("game.html")
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("problem loading template %v", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.Execute(w, nil)
+}
+
+var wsUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+type playerServerWS struct {
+	conn *websocket.Conn
+}
+
+func newPlayerServerWS(w http.ResponseWriter, r *http.Request) *playerServerWS {
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+
+	if err != nil {
+		log.Printf("problem upgrading connection %v\n", err)
+	}
+
+	return &playerServerWS{conn: conn}
+
+}
+
+func (w *playerServerWS) WaitForMsg() string {
+	// ここでmsgを受け取るまでブロックされる。つまり、クライアントからメッセージが送られてくるまで次の行に進まない。
+	_, msg, err := w.conn.ReadMessage()
+
+	if err != nil {
+		log.Printf("problem reading message %v\n", err)
+	}
+
+	return string(msg)
+}
+
+func (w *playerServerWS) Write(p []byte) (n int, err error) {
+	err = w.conn.WriteMessage(websocket.TextMessage, p)
+
+	if err != nil {
+		log.Printf("problem writing message %v\n", err)
+		return 0, err
+	}
+
+	return len(p), nil
+}
+
+func (p *PlayerServer) webSocket(w http.ResponseWriter, r *http.Request) {
+	ws := newPlayerServerWS(w, r)
+
+	numberOfPlayersMsg := ws.WaitForMsg()
+	numberOfPlayers, _ := strconv.Atoi(string(numberOfPlayersMsg))
+	p.game.Start(numberOfPlayers, ws)
+
+	winnerMsg := ws.WaitForMsg()
+	p.game.Finish(string(winnerMsg))
 }
 
 type Player struct {
