@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,7 +28,7 @@ type PlayerServer struct {
 	// PlayerServerはhttp.Handlerを埋め込むことで、ServeHTTPメソッドを実装していることになる。つまり、p.ServeHTTP(w, r)と呼び出すことができるようになる。
 	http.Handler
 	template *template.Template
-	game Game
+	game     Game
 }
 
 func NewPlayerServer(store PlayerStore, game Game) (*PlayerServer, error) {
@@ -72,6 +73,19 @@ func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
+	score := p.store.GetPlayerScore(player)
+	if score == 0 {
+		w.WriteHeader(http.StatusNotFound)
+	}
+	fmt.Fprint(w, score)
+}
+
+func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
+	w.WriteHeader(http.StatusAccepted)
+	p.store.RecordWin(player)
+}
+
 func (p *PlayerServer) playGame(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("game.html")
 
@@ -88,27 +102,41 @@ var wsUpgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type playerServerWS struct {
+	conn *websocket.Conn
+}
+
+func newPlayerServerWS(w http.ResponseWriter, r *http.Request) *playerServerWS {
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+
+	if err != nil {
+		log.Printf("problem upgrading connection %v\n", err)
+	}
+
+	return &playerServerWS{conn: conn}
+
+}
+
+func (w *playerServerWS) WaitForMsg() string {
+	// ここでmsgを受け取るまでブロックされる。つまり、クライアントからメッセージが送られてくるまで次の行に進まない。
+	_, msg, err := w.conn.ReadMessage()
+
+	if err != nil {
+		log.Printf("problem reading message %v\n", err)
+	}
+
+	return string(msg)
+}
+
 func (p *PlayerServer) webSocket(w http.ResponseWriter, r *http.Request) {
-	conn, _ := wsUpgrader.Upgrade(w, r, nil)
-	_, numberOfPlayersMsg, _ := conn.ReadMessage()
+	ws := newPlayerServerWS(w, r)
+
+	numberOfPlayersMsg := ws.WaitForMsg()
 	numberOfPlayers, _ := strconv.Atoi(string(numberOfPlayersMsg))
 	p.game.Start(numberOfPlayers, io.Discard)
 
-	_, winnerMsg, _ := conn.ReadMessage()
+	winnerMsg := ws.WaitForMsg()
 	p.game.Finish(string(winnerMsg))
-}
-
-func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
-	score := p.store.GetPlayerScore(player)
-	if score == 0 {
-		w.WriteHeader(http.StatusNotFound)
-	}
-	fmt.Fprint(w, score)
-}
-
-func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
-	w.WriteHeader(http.StatusAccepted)
-	p.store.RecordWin(player)
 }
 
 type Player struct {
