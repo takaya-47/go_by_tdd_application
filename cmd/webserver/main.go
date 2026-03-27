@@ -1,9 +1,10 @@
 package main
 
 import (
-	poker "github.com/takaya-47/go_by_tdd_application"
 	"log"
 	"net/http"
+
+	poker "github.com/takaya-47/go_by_tdd_application"
 )
 
 const dbFileName = "game.db.json"
