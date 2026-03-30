@@ -3,10 +3,12 @@ package poker_test
 import (
 	"bytes"
 	"fmt"
-	poker "github.com/takaya-47/go_by_tdd_application"
+	"io"
 	"strings"
 	"testing"
 	"time"
+
+	poker "github.com/takaya-47/go_by_tdd_application"
 )
 
 func TestCLI(t *testing.T) {
@@ -71,7 +73,11 @@ func userSends(t *testing.T, messages ...string) *strings.Reader {
 func assertGameStartedWith(t *testing.T, game *GameSpy, want int) {
 	t.Helper()
 
-	if game.StartedWith != want {
+	passed := retryUntil(500*time.Millisecond, func() bool {
+		return game.StartedWith == want
+	})
+
+	if !passed {
 		t.Errorf("wanted Start called with %d but got %d", want, game.StartedWith)
 	}
 }
@@ -87,9 +93,24 @@ func assertGameNotStarted(t *testing.T, game *GameSpy) {
 func assertGameFinishedWith(t *testing.T, game *GameSpy, want string) {
 	t.Helper()
 
-	if game.FinishedWith != want {
-		t.Errorf("wanted Finish called with %q but got %q", want, game.FinishedWith)
+	passed := retryUntil(500*time.Millisecond, func() bool {
+		return game.FinishedWith == want
+	})
+
+	if !passed {
+		t.Errorf("expected finish called with %q but got %q", want, game.FinishedWith)
 	}
+}
+
+func retryUntil(d time.Duration, f func() bool) bool {
+	deadline := time.Now().Add(d)
+
+	for time.Now().Before(deadline) {
+		if f() {
+			return true
+		}
+	}
+	return false
 }
 
 func assertGameNotFinished(t *testing.T, game *GameSpy) {
@@ -124,20 +145,22 @@ type SpyBlindAlerter struct {
 	alerts []scheduledAlert
 }
 
-func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
+func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int, to io.Writer) {
 	s.alerts = append(s.alerts, scheduledAlert{at, amount})
 }
 
 type GameSpy struct {
-	StartCalled    bool
-	StartedWith    int
-	FinishCalled   bool
-	FinishedWith   string
+	StartCalled  bool
+	StartedWith  int
+	BlindAlert   []byte
+	FinishCalled bool
+	FinishedWith string
 }
 
-func (g *GameSpy) Start(numberOfPlayers int) {
+func (g *GameSpy) Start(numberOfPlayers int, out io.Writer) {
 	g.StartedWith = numberOfPlayers
 	g.StartCalled = true
+	out.Write(g.BlindAlert)
 }
 
 func (g *GameSpy) Finish(winner string) {

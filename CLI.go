@@ -38,7 +38,7 @@ func (cli *CLI) PlayPoker() {
 		return
 	}
 
-	cli.game.Start(numberOfPlayers)
+	cli.game.Start(numberOfPlayers, cli.out)
 
 	// ２行目の標準入力を受け取る
 	userInput := cli.readLine()
@@ -66,6 +66,6 @@ func extractWinner(userInput string) (string, error) {
 }
 
 type Game interface {
-	Start(numberOfPlayers int)
+	Start(numberOfPlayers int, alertDestination io.Writer)
 	Finish(winner string)
 }
