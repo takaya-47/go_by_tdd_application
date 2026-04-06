@@ -1,8 +1,8 @@
 package main
 
 import (
-	poker "github.com/takaya-47/go_by_tdd_application"
 	"fmt"
+	poker "github.com/takaya-47/go_by_tdd_application"
 	"log"
 	"os"
 )

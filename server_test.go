@@ -123,7 +123,7 @@ func TestGame(t *testing.T) {
 		assertGameStartedWith(t, game, 3)
 		assertGameFinishedWith(t, game, winner)
 
-		within(t, 10*time.Millisecond, func () { assertWebsocketGotMsg(t, ws, wantedBlindAlert) })
+		within(t, 10*time.Millisecond, func() { assertWebsocketGotMsg(t, ws, wantedBlindAlert) })
 	})
 }
 
@@ -153,10 +153,10 @@ func writeWSMessage(t testing.TB, conn *websocket.Conn, message string) {
 }
 
 func assertWebsocketGotMsg(t *testing.T, ws *websocket.Conn, want string) {
-    _, msg, _ := ws.ReadMessage()
-    if string(msg) != want {
-        t.Errorf(`got "%s", want "%s"`, string(msg), want)
-    }
+	_, msg, _ := ws.ReadMessage()
+	if string(msg) != want {
+		t.Errorf(`got "%s", want "%s"`, string(msg), want)
+	}
 }
 
 func within(t *testing.T, d time.Duration, assert func()) {
